@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Recommender</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #0f0c1d;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            background: rgba(20, 18, 40, 0.8);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(103, 58, 183, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+            z-index: -1;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6b6b, #9c27b0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #9c27b0);
+            border-radius: 3px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 30px;
+            z-index: 2;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 18px 25px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 16px;
+            outline: none;
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        input[type="text"]:focus {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 30px rgba(156, 39, 176, 0.3);
+            border: 1px solid rgba(156, 39, 176, 0.4);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #9c27b0, #673ab7);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            box-shadow: 0 4px 20px rgba(156, 39, 176, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .search-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(156, 39, 176, 0.5);
+        }
+
+        .search-btn:hover::before {
+            left: 100%;
+        }
+
+        .search-btn:active {
+            transform: translateY(0);
+        }
+
+        .search-btn:disabled {
+            background: #2a273a;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin: 30px 0;
+            font-size: 18px;
+            font-weight: 300;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #9c27b0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+            box-shadow: 0 0 20px rgba(156, 39, 176, 0.3);
+        }
+
+        .error {
+            background: rgba(255, 55, 95, 0.15);
+            color: #ff6b6b;
+            padding: 18px;
+            border-radius: 12px;
+            margin: 25px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 55, 95, 0.3);
+            animation: fadeIn 0.5s ease-out;
+            font-weight: 500;
+        }
+
+        .recommendations {
+            margin-top: 40px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .recommendations h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .recommendations h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, #ff6b6b, #9c27b0);
+            border-radius: 2px;
+        }
+
+        .anime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+        }
+
+        .anime-card {
+            background: linear-gradient(145deg, rgba(40, 35, 70, 0.6), rgba(20, 18, 40, 0.8));
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .anime-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #ff6b6b, #9c27b0);
+        }
+
+        .anime-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 15px 40px rgba(156, 39, 176, 0.3);
+            border: 1px solid rgba(156, 39, 176, 0.3);
+        }
+
+        .anime-card h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+        }
+
+        .anime-card h3::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, #ff6b6b, #9c27b0);
+            border-radius: 2px;
+        }
+
+        .anime-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .episodes {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 500;
+        }
+
+        .anime-card p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-top: 15px;
+        }
+
+        .placeholder {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+            margin: 50px 0;
+            font-size: 1.1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .anime-grid {
+                grid-template-columns: 1fr;
+            }
+
+            input[type="text"], .search-btn {
+                padding: 16px 20px;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Anime Recommender</h1>
+
+        <div class="search-container">
+            <input type="text" id="animeInput" placeholder="Enter an anime name (e.g., Naruto, Attack on Titan...)" />
+            <button class="search-btn" onclick="getRecommendations()">
+                Get Recommendations
+            </button>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            Finding perfect anime recommendations for you...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="recommendations" class="recommendations" style="display: none;">
+            <h2>Recommended For You</h2>
+            <div id="animeGrid" class="anime-grid"></div>
+        </div>
+
+        <div id="placeholder" class="placeholder">
+            Enter an anime name to discover amazing recommendations
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/recommend';
+
+        // Add enter key support
+        document.getElementById('animeInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                getRecommendations();
+            }
+        });
+
+        async function getRecommendations() {
+            const input = document.getElementById('animeInput');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const recommendations = document.getElementById('recommendations');
+            const placeholder = document.getElementById('placeholder');
+            const animeGrid = document.getElementById('animeGrid');
+            const searchBtn = document.querySelector('.search-btn');
+
+            const animeName = input.value.trim();
+
+            if (!animeName) {
+                showError('Please enter an anime name!');
+                return;
+            }
+
+            // Show loading state
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            recommendations.style.display = 'none';
+            placeholder.style.display = 'none';
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        anime: animeName
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get recommendations');
+                }
+
+                displayRecommendations(data.recommend);
+
+            } catch (err) {
+                showError(`Error: ${err.message}. Make sure your Flask server is running on localhost:5000`);
+            } finally {
+                loading.style.display = 'none';
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Get Recommendations';
+            }
+        }
+
+        function displayRecommendations(recommendations) {
+            const recommendationsDiv = document.getElementById('recommendations');
+            const animeGrid = document.getElementById('animeGrid');
+
+            if (!recommendations || recommendations.length === 0) {
+                showError('No recommendations found for this anime.');
+                return;
+            }
+
+            animeGrid.innerHTML = '';
+
+            recommendations.forEach((anime, index) => {
+                const animeCard = document.createElement('div');
+                animeCard.className = 'anime-card';
+                animeCard.style.animationDelay = `${index * 0.1}s`;
+
+                animeCard.innerHTML = `
+                    <h3>${anime.name}</h3>
+                    <div class="anime-info">
+                        <div class="rating">
+                            <span>⭐</span>
+                            <span>${anime.rating}</span>
+                        </div>
+                        <div class="episodes">
+                            ${anime.episodes} episodes
+                        </div>
+                    </div>
+                    <p>${anime.description || 'An amazing anime worth watching!'}</p>
+                `;
+
+                animeGrid.appendChild(animeCard);
+            });
+
+            recommendationsDiv.style.display = 'block';
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            const recommendations = document.getElementById('recommendations');
+            const placeholder = document.getElementById('placeholder');
+
+            error.textContent = message;
+            error.style.display = 'block';
+            recommendations.style.display = 'none';
+            placeholder.style.display = 'none';
+        }
+
+        // Add some interactive animations
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add subtle floating animation to the container
+            const container = document.querySelector('.container');
+            setInterval(() => {
+                container.style.transform = `translateY(${Math.sin(Date.now() * 0.001) * 3}px)`;
+            }, 50);
+        });
+    </script>
+</body>
+
+</html>
